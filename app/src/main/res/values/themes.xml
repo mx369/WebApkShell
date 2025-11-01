@@ -1,0 +1,34 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.AndroidShell" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/teal_200</item>
+        <item name="colorSecondaryVariant">@color/teal_700</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <!-- Status bar color. -->
+        <!-- Customize your theme here. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <!-- 删除标题 -->
+        <item name="windowNoTitle">true</item>
+        <!-- 状态栏透明-->
+        <item name="android:windowTranslucentStatus">true</item>
+        <!-- 设置状态栏字体颜色:为黑色-->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">@color/white</item>
+    </style>
+
+    <style name="logo" parent="@style/Theme.AndroidShell">
+        <item name="android:windowFullscreen">true</item>
+        <!--        <item name="android:windowBackground">@mipmap/logo9</item>-->
+        <item name="android:windowBackground">@drawable/logo_splash_background</item>
+    </style>
+    <style name="gp2" parent="@style/Theme.AndroidShell">
+        <item name="android:windowFullscreen">true</item>
+        <!--        <item name="android:windowBackground">@mipmap/logo9</item>-->
+        <item name="android:windowBackground">@drawable/gp2_splash_background</item>
+    </style>
+</resources>
