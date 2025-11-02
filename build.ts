@@ -1,4 +1,6 @@
 import { $ } from 'bun'
+// 如果有配置logo,就复制logo
+// build命令执行之后 把 dist目录复制到安卓项目
 await $`./gradlew assembleRelease`.env({
     ...process.env,
     AP_ID: 'com.bzlaxy.todo',
@@ -8,6 +10,7 @@ await $`./gradlew assembleRelease`.env({
     AP_VERSION_NAME: getVerName()
 })
 $`exit 0`
+
 
 function getVerName() {
     const tArr = new Date().toString().split(' ')[4].split(':').map(it => it.padStart(2, '0'))

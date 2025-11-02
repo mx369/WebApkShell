@@ -17,7 +17,7 @@ android {
         resValue "string", "app_name", getEnv("AP_NAME", "Android Web")
 
         manifestPlaceholders = [
-                appIcon  : "@drawable/" + getEnv("AP_ICON", "gp2"),
+                appIcon  : "@drawable/" + getEnv("AP_ICON", "logo"),
                 appSplash: "@style/" + getEnv("AP_ICON", "logo"),
                 appName  : getEnv("AP_NAME", "Android Web"),
         ]
