@@ -23,7 +23,6 @@
 
     <style name="logo" parent="@style/Theme.AndroidShell">
         <item name="android:windowFullscreen">true</item>
-        <!--        <item name="android:windowBackground">@mipmap/logo9</item>-->
         <item name="android:windowBackground">@drawable/logo_splash_background</item>
     </style>
 </resources>
