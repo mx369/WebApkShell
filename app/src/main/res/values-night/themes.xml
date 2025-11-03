@@ -22,6 +22,5 @@
     </style>
     <style name="splash" parent="@style/Theme.AndroidShell">
         <item name="android:windowFullscreen">true</item>
-        <item name="android:windowBackground">@mipmap/logo9</item>
     </style>
 </resources>
