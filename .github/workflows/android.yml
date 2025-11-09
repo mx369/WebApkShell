@@ -12,25 +12,38 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Update Submodule
+        run: |
+          git submodule update --init --recursive
+
       - name: set up JDK 11
         uses: actions/setup-java@v4
         with:
           java-version: "11"
           distribution: "temurin"
-          cache: gradle
+      - name: Setup Node.js and pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10 # 指定 pnpm 版本
+          run_install: false # 不自动安装依赖（你可以后面手动控制）
 
       - name: Setup Bun
         run: |
           curl -fsSL https://bun.sh/install | bash
           echo "$HOME/.bun/bin" >> $GITHUB_PATH
+          curl -fsSL https://get.pnpm.io/install.sh | sh -
 
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+        run: chmod +x ./WebApkShell/gradlew
+
+      - name: Install Dependency
+        run: bun i
+
       - name: Build with Gradle
-        run: bun run build.ts
+        run: bun genApk.ts
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release-signed-apk
-          path: app/build/outputs/apk/release/*.apk
+          path: WebApkShell/app/build/outputs/apk/release/*.apk
