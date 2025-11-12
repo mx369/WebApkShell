@@ -44,31 +44,22 @@ jobs:
           cp WebApkShell/genApk.ts .
           bun genApk.ts
 
-      - name: Create date tag
-        id: tag_step
+      - name: Create Git Tag with timestamp
+        id: gen_tag
         run: |
-          DATE=$(date +'%Y%m%d-%H%M%S')
-          TAG="v${DATE}"
-          echo "生成 Tag: $TAG"
+          TIMESTAMP=$(date +%Y%m%d-%H%M)
+          CUSTOM_TAG="v${TIMESTAMP}"
+          echo "custom_tag=${CUSTOM_TAG}" >> $GITHUB_OUTPUT
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git tag "$CUSTOM_TAG"
+          git push origin "$CUSTOM_TAG"
 
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git tag $TAG
-          git push origin $TAG
-
-          # 输出 tag 名
-          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
+      - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag_step.outputs.tag_name }}
           files: |
             WebApkShell/app/build/outputs/apk/release/*.apk
-          name: "Release ${{ steps.tag_step.outputs.tag_name }}"
-          body: |
-            🚀 自动构建版本：${{ steps.tag_step.outputs.tag_name }}
-            📅 构建时间：${{ github.run_started_at }}
+          tag_name: ${{ steps.gen_tag.outputs.custom_tag }}   # ← 必须和上面一致
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
