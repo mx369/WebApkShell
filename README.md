@@ -1,3 +1,4 @@
+```
 构建流程:
 1.在package.json里面配置{
     "build_script": "pnpm run build",
@@ -11,3 +12,4 @@
 2. 复制流水线,复制genApk.ts
 3. 添加子仓库 https://github.com/mx369/WebApkShell.git
 
+```
