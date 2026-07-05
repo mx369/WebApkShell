@@ -8,6 +8,7 @@ import android.view.View
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.runBlocking
 import java.io.InputStream
@@ -56,7 +57,13 @@ class MainActivity : AppCompatActivity() {
 
         WebView.setWebContentsDebuggingEnabled(true)
 
-        webView = WebView(this)
+        webView = WebView(this).apply {
+            // 在初始化时设置
+            setLayerType(View.LAYER_TYPE_HARDWARE, null)
+            // 关键：强制不启用独立渲染表面
+        }
+        webView.setBackgroundColor(android.graphics.Color.WHITE)
+
         webView.webViewClient = object : WebViewClient() {
 //            override fun shouldInterceptRequest(
 //                view: WebView,
@@ -101,6 +108,9 @@ class MainActivity : AppCompatActivity() {
         webSettings.allowFileAccessFromFileURLs = true
         webSettings.allowUniversalAccessFromFileURLs = true
         webSettings.allowContentAccess = true
+        webSettings.setDomStorageEnabled(true)
+        //webView.setLayerType(View.LAYER_TYPE_SOFTWARE,null);
+
 
 
         class JsObject {
@@ -122,11 +132,20 @@ class MainActivity : AppCompatActivity() {
 //        println(webSettings.userAgentString)
 
     }
+    override fun onPause() {
+        webView.setLayerType(View.LAYER_TYPE_SOFTWARE,null);
+        webView.onPause()
+        webView.pauseTimers()
+        super.onPause()
+    }
 
     override fun onResume() {
         super.onResume()
         webView.onResume()
-        webView.postInvalidate()
+        // 重新固定渲染层
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        // 强制重绘
+        webView.invalidate()
     }
 
     private fun loadRealContent(
