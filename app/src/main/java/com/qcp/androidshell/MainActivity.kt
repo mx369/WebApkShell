@@ -134,6 +134,8 @@ class MainActivity : AppCompatActivity() {
     }
     override fun onPause() {
         webView.setLayerType(View.LAYER_TYPE_SOFTWARE,null);
+        webView.invalidate()
+
         webView.onPause()
         webView.pauseTimers()
         super.onPause()
