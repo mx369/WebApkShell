@@ -50,8 +50,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 切回正常主题（manifest 里用的是启动屏主题，这里换回来）
-        setTheme(R.style.Theme_AndroidShell)
+        // 不切主题：保持 manifest 的启动屏 windowBackground，WebView 透明让其透过来
         super.onCreate(savedInstanceState)
         startFrontService()
 
@@ -59,7 +58,7 @@ class MainActivity : AppCompatActivity() {
 
         webView = WebView(this)
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        webView.setBackgroundColor(Color.WHITE)
+        webView.setBackgroundColor(Color.TRANSPARENT)
         webView.webViewClient = WebViewClient()
         webView.scrollBarSize = 0
         webView.overScrollMode = View.OVER_SCROLL_NEVER
@@ -78,11 +77,25 @@ class MainActivity : AppCompatActivity() {
         class JsObject {
             @get:JavascriptInterface
             val statusBarHeight = "${getStatusBarHeight()}px"
+
+            @JavascriptInterface
+            fun dismissSplash() {
+                webView.post {
+                    window.decorView.setBackgroundColor(Color.WHITE)
+                    webView.setBackgroundColor(Color.WHITE)
+                }
+            }
         }
 
         webView.addJavascriptInterface(JsObject(), "shell")
         webView.loadUrl("file:///android_asset/index.html")
         setContentView(webView)
+
+        // 默认 SPLASH_TIMEOUT 毫秒后移除启动屏，JS 可提前调用 shell.dismissSplash() 取消
+        webView.postDelayed({
+            window.decorView.setBackgroundColor(Color.WHITE)
+            webView.setBackgroundColor(Color.WHITE)
+        }, BuildConfig.SPLASH_TIMEOUT.toLong())
     }
 
     override fun onPause() {

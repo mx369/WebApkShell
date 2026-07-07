@@ -22,6 +22,8 @@ android {
                 appName  : getEnv("AP_NAME", "Android Web"),
         ]
 
+        buildConfigField "String", "SPLASH_TIMEOUT", "\"${getEnv("AP_SPLASH_TIMEOUT", "2000")}\""
+
         minSdk 29
         targetSdk 32
 
