@@ -50,6 +50,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 切回正常主题（manifest 里用的是启动屏主题，这里换回来）
+        setTheme(R.style.Theme_AndroidShell)
         super.onCreate(savedInstanceState)
         startFrontService()
 

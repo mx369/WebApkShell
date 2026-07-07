@@ -31,8 +31,8 @@
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize|uiMode"
             android:launchMode="singleTask"
             android:icon="${appIcon}"
-            android:roundIcon="${appIcon}">
-            <!--            android:theme="${appSplash}"-->
+            android:roundIcon="${appIcon}"
+            android:theme="${appSplash}">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
