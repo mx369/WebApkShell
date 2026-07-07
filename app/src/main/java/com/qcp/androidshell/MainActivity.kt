@@ -2,23 +2,26 @@ package com.qcp.androidshell
 
 import android.content.Intent
 import android.os.Bundle
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_BACK
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.graphics.Color
+import android.widget.FrameLayout
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.coroutines.runBlocking
-import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.URL
 
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private var snapshot: ImageView? = null
+    private var visualStateCallbackId = 0L
 
     private fun getStatusBarHeight(): Int {
         var res = 0
@@ -37,64 +40,25 @@ class MainActivity : AppCompatActivity() {
 
     private fun startFrontService() {
         val intent = Intent(this, ForegroundService::class.java)
-        runBlocking {
-            try {
-                startForegroundService(intent)
-                println("启动成功")
-            } catch (e: Exception) {
-                println("出现错误")
-                print(e)
-            }
+        try {
+            startForegroundService(intent)
+            println("启动成功")
+        } catch (e: Exception) {
+            println("出现错误")
+            print(e)
         }
-
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         startFrontService()
 
-
         WebView.setWebContentsDebuggingEnabled(true)
 
-        webView = WebView(this).apply {
-            // 在初始化时设置
-            setLayerType(View.LAYER_TYPE_HARDWARE, null)
-            // 关键：强制不启用独立渲染表面
-        }
-        webView.setBackgroundColor(android.graphics.Color.WHITE)
-
-        webView.webViewClient = object : WebViewClient() {
-//            override fun shouldInterceptRequest(
-//                view: WebView,
-//                request: WebResourceRequest
-//            ): WebResourceResponse? {
-//                val res = super.shouldInterceptRequest(view, request)
-//                if (request.requestHeaders["Referer"] == null) return res
-//
-//                val local = URI(request.requestHeaders["Referer"])
-//                if (request.url.host != local.host) {
-//                    println("拦截 ${request.url}")
-//                    val (contentType, realContent) =
-//                        loadRealContent(request.url.toString(), request.requestHeaders)
-//
-//                    // 返回包含实际请求内容和自定义请求头的 WebResourceResponse
-//                    return WebResourceResponse(
-//                        contentType,
-//                        "utf-8",
-//                        ByteArrayInputStream(realContent)
-//                    )
-//                        .apply {
-//                            val headers = mutableMapOf<String, String>()
-//                            headers["Access-Control-Allow-Origin"] = "*"
-//                            setStatusCodeAndReasonPhrase(200, "OK")
-//                            responseHeaders = headers
-//                        }
-//                }
-//                return res
-//
-//            }
-        }
+        webView = WebView(this)
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        webView.setBackgroundColor(Color.WHITE)
+        webView.webViewClient = WebViewClient()
         webView.scrollBarSize = 0
         webView.overScrollMode = View.OVER_SCROLL_NEVER
 
@@ -108,69 +72,60 @@ class MainActivity : AppCompatActivity() {
         webSettings.allowFileAccessFromFileURLs = true
         webSettings.allowUniversalAccessFromFileURLs = true
         webSettings.allowContentAccess = true
-        webSettings.setDomStorageEnabled(true)
-        //webView.setLayerType(View.LAYER_TYPE_SOFTWARE,null);
-
-
 
         class JsObject {
             @get:JavascriptInterface
             val statusBarHeight = "${getStatusBarHeight()}px"
-
         }
 
         webView.addJavascriptInterface(JsObject(), "shell")
         webView.loadUrl("file:///android_asset/index.html")
-//        webView.loadUrl("http://192.168.185.36:8686/#/")
         setContentView(webView)
-
-//        runBlocking {
-//            delay(200)
-//            setTheme(R.style.Theme_AndroidShell)
-//            setContentView(webView)
-//        }
-//        println(webSettings.userAgentString)
-
     }
-    override fun onPause() {
-        webView.setLayerType(View.LAYER_TYPE_SOFTWARE,null);
-        webView.invalidate()
 
+    override fun onPause() {
+        // 截取当前 WebView 画面，覆盖一层 ImageView，防止回前台时闪白
+        if (webView.width > 0 && webView.height > 0) {
+            val bmp = Bitmap.createBitmap(webView.width, webView.height, Bitmap.Config.ARGB_8888)
+            webView.draw(Canvas(bmp))
+            ImageView(this).apply {
+                setImageBitmap(bmp)
+                scaleType = ImageView.ScaleType.FIT_XY
+                addContentView(this, FrameLayout.LayoutParams(-1, -1))
+                snapshot = this
+            }
+        }
+        webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+        webView.invalidate()
         webView.onPause()
-        webView.pauseTimers()
         super.onPause()
     }
 
     override fun onResume() {
         super.onResume()
         webView.onResume()
-        // 重新固定渲染层
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        // 强制重绘
         webView.invalidate()
-    }
-
-    private fun loadRealContent(
-        url: String,
-        requestHeaders: Map<String, String>?
-    ): Pair<String, ByteArray> {
-        // 使用 HttpURLConnection 进行网络请求获取实际请求内容
-        val connection: HttpURLConnection = URL(url).openConnection() as HttpURLConnection
-
-        // 将 request 的头信息传递到实际请求中
-        requestHeaders?.let { headers ->
-            for ((key, value) in headers) {
-                connection.setRequestProperty(key, value)
+        // 使用 postVisualStateCallback 精确监测 Chromium 渲染完成时机。
+        // 当 Chromium 确认视觉状态已准备好（下一次 onDraw 能画出画面）时回调 onComplete。
+        visualStateCallbackId++
+        val currentId = visualStateCallbackId
+        webView.postVisualStateCallback(currentId, object : WebView.VisualStateCallback() {
+            override fun onComplete(requestId: Long) {
+                if (requestId != currentId) return
+                webView.post {
+                    snapshot?.let { (it.parent as? ViewGroup)?.removeView(it) }
+                    snapshot = null
+                }
             }
-        }
-
-        try {
-            val inputStream: InputStream = connection.inputStream
-
-            return Pair(connection.contentType, inputStream.readBytes())
-        } finally {
-            connection.disconnect()
-        }
+        })
+        // 兜底：如果 2 秒内 callback 没触发（极端情况），强制移除 overlay
+        webView.postDelayed({
+            if (snapshot != null && currentId == visualStateCallbackId) {
+                snapshot?.let { (it.parent as? ViewGroup)?.removeView(it) }
+                snapshot = null
+            }
+        }, 2000)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
