@@ -91,11 +91,11 @@ class MainActivity : AppCompatActivity() {
         webView.loadUrl("file:///android_asset/index.html")
         setContentView(webView)
 
-        // 默认 SPLASH_TIMEOUT 毫秒后移除启动屏，JS 可提前调用 shell.dismissSplash() 取消
+        // 默认超时后移除启动屏，JS 可提前调用 shell.dismissSplash() 取消
         webView.postDelayed({
             window.decorView.setBackgroundColor(Color.WHITE)
             webView.setBackgroundColor(Color.WHITE)
-        }, BuildConfig.SPLASH_TIMEOUT.toLong())
+        }, ShellConfig.SPLASH_TIMEOUT)
     }
 
     override fun onPause() {
