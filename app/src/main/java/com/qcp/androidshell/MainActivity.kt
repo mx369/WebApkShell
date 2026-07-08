@@ -22,6 +22,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var snapshot: ImageView? = null
     private var visualStateCallbackId = 0L
+    private var splashDismissed = false
 
     private fun getStatusBarHeight(): Int {
         var res = 0
@@ -80,7 +81,7 @@ class MainActivity : AppCompatActivity() {
 
             @JavascriptInterface
             fun dismissSplash() {
-                webView.post { webView.visibility = View.VISIBLE }
+                webView.post { dismissSplashInternal() }
             }
         }
 
@@ -91,8 +92,16 @@ class MainActivity : AppCompatActivity() {
 
         // 到时间显示 WebView，启动屏（windowBackground）被盖住
         webView.postDelayed({
-            webView.visibility = View.VISIBLE
+            dismissSplashInternal()
         }, ShellConfig.SPLASH_TIMEOUT)
+    }
+
+    private fun dismissSplashInternal() {
+        if (splashDismissed) return
+        splashDismissed = true
+        webView.alpha = 0f
+        webView.visibility = View.VISIBLE
+        webView.animate().alpha(1f).setDuration(600).start()
     }
 
     override fun onPause() {
