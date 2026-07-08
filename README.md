@@ -12,7 +12,8 @@
     "AP_ID": "com.t.vant",//安卓应用包名
     "AP_ICON": "./public/logo.xml",//安卓应用icon,要矢量xml,不支持嵌套外挂资源,可以不写,有默认值;
     "AP_NAME": "VANT",//app的名称
-    "AP_VERSION_NAME": ""
+    "AP_VERSION_NAME": "",
+    "AP_SPLASH_TIMEOUT": "2000"//启动屏超时时间(毫秒),默认2000,JS可提前调用shell.dismissSplash()关闭
 },
 
 ```
@@ -24,12 +25,16 @@ b) 修改流水线的触发分支配置,默认为main
 c) 安卓应用图标生成攻略:
     - svg转xml https://svg2vector.com/
     - svg素材网址 https://www.iconfont.cn/collections/index
-d) 状态栏高度
+d) JS 接口 (window.shell)
 ```js
-// 获取状态栏高度
-const statusBarHeight = window.shell?.getStatusBarHeight() || '0px';
+// 1. 获取状态栏高度
+const statusBarHeight = window.shell?.statusBarHeight || '0px';
 // 可以通过css变量
 document.body.style.setProperty('--bar-height', statusBarHeight);
+
+// 2. 关闭启动屏
+// 首页数据加载完成后调用,提前关闭启动屏;不调用则等 AP_SPLASH_TIMEOUT 超时后自动关闭
+window.shell?.dismissSplash();
 ```
 
 
