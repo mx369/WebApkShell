@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
 
         webView = WebView(this)
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        webView.setBackgroundColor(Color.TRANSPARENT)
+        webView.setBackgroundColor(Color.WHITE)
         webView.webViewClient = WebViewClient()
         webView.scrollBarSize = 0
         webView.overScrollMode = View.OVER_SCROLL_NEVER
@@ -80,21 +80,18 @@ class MainActivity : AppCompatActivity() {
 
             @JavascriptInterface
             fun dismissSplash() {
-                webView.post {
-                    window.decorView.setBackgroundColor(Color.WHITE)
-                    webView.setBackgroundColor(Color.WHITE)
-                }
+                webView.post { webView.visibility = View.VISIBLE }
             }
         }
 
         webView.addJavascriptInterface(JsObject(), "shell")
+        webView.setVisibility(View.INVISIBLE)
         webView.loadUrl("file:///android_asset/index.html")
         setContentView(webView)
 
-        // 默认超时后移除启动屏，JS 可提前调用 shell.dismissSplash() 取消
+        // 到时间显示 WebView，启动屏（windowBackground）被盖住
         webView.postDelayed({
-            window.decorView.setBackgroundColor(Color.WHITE)
-            webView.setBackgroundColor(Color.WHITE)
+            webView.visibility = View.VISIBLE
         }, ShellConfig.SPLASH_TIMEOUT)
     }
 
