@@ -51,14 +51,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 不切主题：保持 manifest 的启动屏 windowBackground，WebView 透明让其透过来
+        // 保持 manifest 的启动屏作为冷启动背景，页面显示后再替换为白色
         super.onCreate(savedInstanceState)
         startFrontService()
 
         WebView.setWebContentsDebuggingEnabled(true)
 
         webView = WebView(this)
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
         webView.setBackgroundColor(Color.WHITE)
         webView.webViewClient = WebViewClient()
         webView.scrollBarSize = 0
@@ -101,10 +100,27 @@ class MainActivity : AppCompatActivity() {
         splashDismissed = true
         webView.alpha = 0f
         webView.visibility = View.VISIBLE
-        webView.animate().alpha(1f).setDuration(600).start()
+        webView.animate()
+            .alpha(1f)
+            .setDuration(600)
+            .withEndAction {
+                webView.postDelayed({
+                    window.setBackgroundDrawableResource(android.R.color.white)
+                }, 600)
+            }
+            .start()
+    }
+
+    private fun removeSnapshot() {
+        snapshot?.let { (it.parent as? ViewGroup)?.removeView(it) }
+        snapshot = null
     }
 
     override fun onPause() {
+        // 使上一轮恢复回调失效，避免它误删本轮创建的遮罩
+        visualStateCallbackId++
+        removeSnapshot()
+
         // 截取当前 WebView 画面，覆盖一层 ImageView，防止回前台时闪白
         if (webView.width > 0 && webView.height > 0) {
             val bmp = Bitmap.createBitmap(webView.width, webView.height, Bitmap.Config.ARGB_8888)
@@ -116,7 +132,6 @@ class MainActivity : AppCompatActivity() {
                 snapshot = this
             }
         }
-        webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
         webView.invalidate()
         webView.onPause()
         super.onPause()
@@ -125,7 +140,6 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         webView.onResume()
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
         webView.invalidate()
         // 使用 postVisualStateCallback 精确监测 Chromium 渲染完成时机。
         // 当 Chromium 确认视觉状态已准备好（下一次 onDraw 能画出画面）时回调 onComplete。
@@ -133,18 +147,21 @@ class MainActivity : AppCompatActivity() {
         val currentId = visualStateCallbackId
         webView.postVisualStateCallback(currentId, object : WebView.VisualStateCallback() {
             override fun onComplete(requestId: Long) {
-                if (requestId != currentId) return
-                webView.post {
-                    snapshot?.let { (it.parent as? ViewGroup)?.removeView(it) }
-                    snapshot = null
+                if (requestId != visualStateCallbackId) return
+                // callback 只保证下一次 draw 可用；等待一个完整绘制帧后再移除遮罩
+                webView.postOnAnimation firstFrame@{
+                    if (requestId != visualStateCallbackId) return@firstFrame
+                    webView.postOnAnimation secondFrame@{
+                        if (requestId != visualStateCallbackId) return@secondFrame
+                        removeSnapshot()
+                    }
                 }
             }
         })
         // 兜底：如果 2 秒内 callback 没触发（极端情况），强制移除 overlay
         webView.postDelayed({
             if (snapshot != null && currentId == visualStateCallbackId) {
-                snapshot?.let { (it.parent as? ViewGroup)?.removeView(it) }
-                snapshot = null
+                removeSnapshot()
             }
         }, 2000)
     }
