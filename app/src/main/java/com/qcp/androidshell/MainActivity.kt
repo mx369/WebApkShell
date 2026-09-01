@@ -24,12 +24,14 @@ class MainActivity : AppCompatActivity() {
     private var visualStateCallbackId = 0L
     private var splashDismissed = false
 
-    private fun getStatusBarHeight(): Int {
-        var res = 0
+    private fun getStatusBarHeightPx(): Int {
         val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+        return if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
+    }
+
+    private fun getStatusBarHeight(): Int {
         val density = resources.displayMetrics.density
-        if (resourceId > 0) res = (resources.getDimensionPixelSize(resourceId) / density).toInt()
-        return res
+        return (getStatusBarHeightPx() / density).toInt()
     }
 
     private fun backHome() {
@@ -122,13 +124,20 @@ class MainActivity : AppCompatActivity() {
         removeSnapshot()
 
         // 截取当前 WebView 画面，覆盖一层 ImageView，防止回前台时闪白
-        if (webView.width > 0 && webView.height > 0) {
-            val bmp = Bitmap.createBitmap(webView.width, webView.height, Bitmap.Config.ARGB_8888)
-            webView.draw(Canvas(bmp))
+        val snapshotTop = getStatusBarHeightPx().coerceIn(0, webView.height)
+        val snapshotHeight = webView.height - snapshotTop
+        if (webView.width > 0 && snapshotHeight > 0) {
+            val bmp = Bitmap.createBitmap(webView.width, snapshotHeight, Bitmap.Config.ARGB_8888)
+            Canvas(bmp).apply {
+                translate(0f, -snapshotTop.toFloat())
+                webView.draw(this)
+            }
             ImageView(this).apply {
                 setImageBitmap(bmp)
                 scaleType = ImageView.ScaleType.FIT_XY
-                addContentView(this, FrameLayout.LayoutParams(-1, -1))
+                addContentView(this, FrameLayout.LayoutParams(-1, snapshotHeight).apply {
+                    topMargin = snapshotTop
+                })
                 snapshot = this
             }
         }
