@@ -124,6 +124,7 @@ class MainActivity : AppCompatActivity() {
         removeSnapshot()
 
         // 截取当前 WebView 画面，覆盖一层 ImageView，防止回前台时闪白
+        webView.evaluateJavascript("window.dispatchEvent(new CustomEvent('app-activity', { detail: false }))", null)
         val snapshotTop = getStatusBarHeightPx().coerceIn(0, webView.height)
         val snapshotHeight = webView.height - snapshotTop
         if (webView.width > 0 && snapshotHeight > 0) {
@@ -149,6 +150,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         webView.onResume()
+        webView.evaluateJavascript("window.dispatchEvent(new CustomEvent('app-activity', { detail: true }))", null)
         webView.invalidate()
         // 使用 postVisualStateCallback 精确监测 Chromium 渲染完成时机。
         // 当 Chromium 确认视觉状态已准备好（下一次 onDraw 能画出画面）时回调 onComplete。
